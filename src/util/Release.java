@@ -9,5 +9,6 @@ public final class Release {
     public static final String  SESSIONS_DB_FILE    = "redphone_sessions.db";
     public static final int     MINIMUM_RELAY_PORT  = 3478;  //49152;
     public static final int     MAXIMUM_RELAY_PORT  = 3478;  //65535;
+    public static final int     MAC_LENGTH  = 10;
 
 } //EoC Release

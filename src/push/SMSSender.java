@@ -16,7 +16,9 @@ public class SMSSender {
 
     public static void main(String[] args) {
         SMSSender sender = new SMSSender();
-        sender.sendSMS(Credentials.VOIBUSTER_USERNAME, Credentials.VOIBUSTER_PASSWORD, Credentials.VOIBUSTER_FROM, "+306949193033","koukou");
+        String tosend ="kou++kou";
+        tosend = tosend.replaceAll("\\+", "~");
+        sender.sendSMS(Credentials.VOIBUSTER_USERNAME, Credentials.VOIBUSTER_PASSWORD, Credentials.VOIBUSTER_FROM, "+306949193033",tosend);
     }
 
 //TODO exception handling on xml response

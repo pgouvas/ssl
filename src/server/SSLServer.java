@@ -17,6 +17,7 @@ import java.io.InputStreamReader;
 import java.net.*;
 import java.security.Security;
 import java.util.Random;
+import java.util.Vector;
 
 /**
  * Created with IntelliJ IDEA.
@@ -292,6 +293,12 @@ class SocketHandler implements Runnable {
 
                 //SMS
                 String payload = util.Utils.createEncryptedSignalMessage( initiatorphone, new Long(sessionid), randomport,relaystr,shared_key_of_target);
+                System.out.println("payload before URL encoding   : "+payload);
+                System.out.println("payload length before encoding: "+payload.length());
+                //payload=URLEncoder.encode(payload,"ISO-8859-1");
+                //System.out.println("payload after URL encoding: "+payload);
+                payload=payload.replaceAll("\\+","~");
+                System.out.println("payload after Character replacement: "+payload);
                 String smsmsg = "RedPhone%20call:"+payload;
                 System.out.println("Senging SMS\n"+smsmsg);
                 SMSSender.sendSMS(Credentials.VOIBUSTER_USERNAME, Credentials.VOIBUSTER_PASSWORD, Credentials.VOIBUSTER_FROM, targetphonenumber, smsmsg);
@@ -303,6 +310,12 @@ class SocketHandler implements Runnable {
             //GET /open/sessionid HTTP/1.0
             if (input.indexOf("GET /open")!=-1){
                 log("HANDLER - GET /open");
+                sendOK200();
+            }
+
+            //RING /session/1263989551 HTTP/1.0
+            if (input.indexOf("RING /session")!=-1){
+                log("HANDLER - RING /session");
                 sendOK200();
             }
 
@@ -395,13 +408,19 @@ class SocketHandler implements Runnable {
 
 } //EoC SocketHandler
 
+
+
+
+
+
 class RelayHandler implements Runnable{
     private boolean isactive=true;
     SocketHandler sockethandler;
     private int relayPort;
     DatagramSocket serverSocket;
     byte[] receiveData = new byte[1024];
-
+    Vector<Object> remoteAddress = new Vector<Object>();
+    Vector<Object> remotePort = new Vector<Object>();
 
     public RelayHandler(SocketHandler sockethandler,int relayPort){
         this.relayPort=relayPort;
@@ -418,14 +437,20 @@ class RelayHandler implements Runnable{
         System.out.println("Initialize UDP Server at "+relayPort);
         while(isactive){
             try{
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            serverSocket.receive(receivePacket);
-            String sentence = new String( receivePacket.getData());
-            System.out.println("RECEIVED: " + sentence);
-            InetAddress IPAddress = receivePacket.getAddress();
-            int port = receivePacket.getPort();
-            //handle
-            handleSentense(sentence,IPAddress,port);
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                serverSocket.receive(receivePacket);
+                String sentence = new String( receivePacket.getData());
+                System.out.println("RECEIVED: " + sentence);
+                InetAddress IPAddress = receivePacket.getAddress();
+                int port = receivePacket.getPort();
+                //handle
+                handleSentense(sentence,IPAddress,port);
+
+                String sender =  receivePacket.getAddress() +"@"+ receivePacket.getPort();
+                //Checks of a connection already exists
+                this.checkDuplicate(receivePacket);
+                //Unicast the message to other clients
+                this.unicastMessage(receivePacket);
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -453,9 +478,52 @@ class RelayHandler implements Runnable{
         serverSocket.send(sendPacket);
     } //EoM sendOK200
 
-
     public void end(){
             this.isactive = false;
     }//EoM end()
+
+
+    public void  unicastMessage(DatagramPacket request){
+        String sender =  request.getAddress() +"@"+ request.getPort();
+        DatagramPacket reply = new DatagramPacket(request.getData(),request.getLength(), request.getAddress(), request.getPort());
+        int counter =0;
+        try {
+            System.out.println("\n[ START MESSAGE TRANSMISSION ]\n");
+            for(int i=0;i<this.remoteAddress.size();i++){
+
+                String receiver = (this.remoteAddress.get(i).toString()+"@"+this.remotePort.get(i).toString());
+
+                //Send messages to All clients beyond me
+                if (!(receiver.equalsIgnoreCase(sender))){
+                    counter++;
+                    System.out.println("<-- Unicasting message from: "+sender+" to " + receiver);
+                    reply =  new DatagramPacket(request.getData(),request.getLength(), (InetAddress) remoteAddress.get(i), Integer.parseInt(remotePort.get(i).toString()) );
+
+                    serverSocket.send(reply);
+                } else {
+                    //Sent Acknowledge to client
+                    //reply =  new DatagramPacket(message,message.length, (InetAddress) remoteAddress.get(i), Integer.parseInt(remotePort.get(i).toString()) );
+                    //serverSocket.send(reply);
+                }
+            }
+            System.out.println("\n[ END MESSAGE TRANSMISSION, TOTAL RECEIVERS :"+ counter+" ]\n");
+
+        } catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+    }//EoM unicastMessage
+
+
+    public boolean checkDuplicate(DatagramPacket request){
+        String sender =  request.getAddress() +"@"+ request.getPort();
+        for (int i=0;i<remoteAddress.size();i++)
+            if (  (this.remoteAddress.get(i).toString()+"@"+this.remotePort.get(i).toString()).equalsIgnoreCase(sender))
+                return true;
+
+        remoteAddress.add( (Object)request.getAddress());
+        remotePort.add(request.getPort()) ;
+        return false;
+    }//EoM checkDuplicate
+
 
 }//EoC RelayHandler

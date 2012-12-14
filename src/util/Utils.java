@@ -33,31 +33,40 @@ public class Utils {
         //1 Byte version
         byte[] vb = {0x00};
         String version = new String(vb);
-        System.out.println("version length:"+version.length());
+        System.out.println("***Version length           :"+version.length());
 
         //16 bytes IV
         byte[] iv = new byte[16]; //Means 2048 bit
         Random random = new Random();
         random.nextBytes(iv);
-        System.out.println("IV length:"+iv.length);
+        System.out.println("***IV length:               : "+iv.length);
 
         //3 variable bytes  Signal (~ 35 - 40)
         CompressedInitiateSignalProtocol.CompressedInitiateSignal signal = util.Utils.generateCompressedInitiateSignal(initiator,sessionid,port,hostname);
         byte[] signalbytes = signal.toByteArray();
-        System.out.println("signal length:" + signalbytes.length);
-        System.out.println("Encrypting with "+targetsharedkey);
+        System.out.println("***InitialSignal.length     : "+ signalbytes.length);
+        System.out.println("***InitialSignal            : "+ org.thoughtcrime.redphone.util.Base64.encodeBytes(signalbytes) );
+        System.out.println("***Encrypting with TargetKey: "+targetsharedkey);
         byte[] encsignalbytes = util.Utils.encryptAES(iv,targetsharedkey,signalbytes);
+        System.out.println("***EncryptedSignal.length   : "+ encsignalbytes.length);
+        System.out.println("***EncryptedSignal          : "+ org.thoughtcrime.redphone.util.Base64.encodeBytes(encsignalbytes) );
 
         //4 concatinate all and calculate MAC
         byte[] fbytes = util.Utils.concat( vb, util.Utils.concat(iv,encsignalbytes) );
-        System.out.println("final length:"+fbytes.length);
-        byte[] macfull = util.Utils.generateSHA1(targetsharedkey,fbytes);
-        byte[] finalmac = new byte[10];
-        System.arraycopy(macfull,0,finalmac,0,10);
+        System.out.println("***VRSION+IV+ENSignal.length: "+fbytes.length);
+        System.out.println("***VRSION+IV+ENSignal       : "+org.thoughtcrime.redphone.util.Base64.encodeBytes(fbytes));
 
+        byte[] macfull = util.Utils.generateSHA1(targetsharedkey,fbytes);
+        System.out.println("***Full digest.length       : "+macfull.length);
+        System.out.println("***Full digest              : "+org.thoughtcrime.redphone.util.Base64.encodeBytes(macfull));
+        byte[] finalmac = new byte[10];
+        System.arraycopy(macfull,10,finalmac,0,finalmac.length);
+        System.out.println("***10bytesdigest.length     : "+finalmac.length);
+        System.out.println("***10bytesdigest            : "+org.thoughtcrime.redphone.util.Base64.encodeBytes(finalmac));
         byte[] tosend = util.Utils.concat(fbytes,finalmac);
-        System.out.println("tosend length"+tosend.length);
+        System.out.println("***VRS+IV+ENC+MAC.length    : "+tosend.length);
         encodedmsg = org.thoughtcrime.redphone.util.Base64.encodeBytes(tosend);
+        System.out.println("***VRS+IV+ENC+MAC           :"+encodedmsg);
 
         return encodedmsg;
     }//EoM createEncryptedSignalMessage
@@ -114,10 +123,10 @@ public class Utils {
         byte[] digestcomplete=null;
         try {
             byte[] macKey       = getMacKey(key);
-            System.out.println("macKey"+macKey.length);
-            System.out.println("macKey"+macKey.toString());
-            System.out.println("messageBytes***"+messageBytes.length+""     );
-            System.out.println("messageBytes###"+messageBytes.toString() );
+            System.out.println("***macKey.length      : "+macKey.length);
+            System.out.println("***macKey             : " + org.thoughtcrime.redphone.util.Base64.encodeBytes(macKey) );
+            System.out.println("***messageBytes.length: "+messageBytes.length+""     );
+            System.out.println("***messageBytes       : " + org.thoughtcrime.redphone.util.Base64.encodeBytes(messageBytes)  );
             SecretKeySpec secretkey = new SecretKeySpec(macKey, "HmacSHA1");
             Mac mac = Mac.getInstance("HmacSHA1");
             mac.init(secretkey);
