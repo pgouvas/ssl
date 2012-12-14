@@ -1,5 +1,6 @@
 package server;
 
+import db.DBConnector;
 import push.SMSSender;
 import util.Base64;
 import util.Credentials;
@@ -13,8 +14,7 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.security.Security;
 import java.util.Random;
 
@@ -27,15 +27,16 @@ import java.util.Random;
  */
 public class SSLServer {
 
-    private static int port=8443;
-    private static int maxConnections=100;
+    private static int port=Release.REDPHONE_SERVER_PORT;
+    private static int maxConnections=Release.REDPHONE_SERVER_MAX_CONNECTIONS;
     private static boolean persistent = true;
     private static boolean two_way_ssl = false;
+    private DBConnector database;
 
-    public static void main(String[] args) {
-        SSLServer sslServer = new SSLServer();
-        sslServer.startServer();
-    }//EoM main
+    public SSLServer(){
+        //initialize database
+        database = new DBConnector();
+    }//EoConstructor
 
     public void startServer() {
         if (Security.getProvider("BC") == null) {
@@ -76,7 +77,7 @@ public class SSLServer {
             while ((i++ < maxConnections) || (maxConnections == 0)) {
                 server = ssocket.accept();
                 if (persistent)  server.setKeepAlive(true);
-                SocketHandler handler = new SocketHandler(server);
+                SocketHandler handler = new SocketHandler(server,database);
                 Thread t = new Thread(handler);
                 t.start();
             }
@@ -86,9 +87,12 @@ public class SSLServer {
         }
     }  //EoM startServer
 
+    public static void main(String[] args) {
+        SSLServer sslServer = new SSLServer();
+        sslServer.startServer();
+    }//EoM main
+
 } //EoClass
-
-
 
 
 class SocketHandler implements Runnable {
@@ -96,17 +100,19 @@ class SocketHandler implements Runnable {
     private Socket socket;
     private boolean isalive = true;
     private BufferedReader in;
-
     private String baseauth = "";
-    private String[] verbs = {"GET","PUT","DELETE","RING","BUSY"};
+    private int minimumPort= Release.MINIMUM_RELAY_PORT;
+    private int maximumPort= Release.MAXIMUM_RELAY_PORT;
+    private DBConnector database;
 
-    SocketHandler(Socket socket) {
+    SocketHandler(Socket socket,DBConnector database) {
         Random rand = new Random();
         String name = ""+Math.abs(rand.nextInt());
         this.sockethandlername = name;
         Thread.currentThread().setName(name);
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         this.socket=socket;
+        this.database=database;
         System.out.println("SocketHandler created "+name);
     } //EoConstructor
 
@@ -118,7 +124,7 @@ class SocketHandler implements Runnable {
             String segment="";
             String line = "";
             while(isalive && (line = in.readLine()) != null ) {
-                //log("LINE FROM "+sockethandlername,line);
+                log("LINE FROM "+sockethandlername,line);
 
                 if (line.trim().equals("")){  //if you catch \r\n WITHOUT content-length earlier
                     handleSegment(segment);
@@ -173,7 +179,7 @@ class SocketHandler implements Runnable {
                 Authorization: Basic KzMwNjk0OTE5MzAzMzp0T1JnZFl0bWl1Q2JnQXMrekRXZUJWbVk=
              */
 
-            log("segment",input);
+            log("SEGMENT",input);
 
             if (input.indexOf("GET /users/verification")!=-1){
                 log("HANDLER - GET /users/verification");
@@ -184,17 +190,18 @@ class SocketHandler implements Runnable {
                     String decoded = new String(dec);
                     String phonenumber = decoded.substring(0,13);
                     String password = decoded.substring(14,decoded.length());
+                    System.out.println("decoded:"+decoded);
                     String challenge = Generator.getChallenge();
-                    //log("Decoded",decoded);
-                    //log("phonenumber",phonenumber);
-                    //log("challenge",challenge);
+                    System.out.println("Random challenge:"+challenge);
+
                     String smsmsg = "A%20RedPhone%20is%20trying%20to%20verify%20you:"+challenge;
                     SMSSender.sendSMS(Credentials.VOIBUSTER_USERNAME, Credentials.VOIBUSTER_PASSWORD, Credentials.VOIBUSTER_FROM, phonenumber, smsmsg);
+                    System.out.println("Sended SMS with challenge: "+smsmsg);
                 }
                 //default response
                 sendOK200();
-
-            }
+                System.out.println("Sended OK200 ");
+            }//GET /users/verification
 
             /*
                 This method accepts a challenge-verification request from a specific number
@@ -212,17 +219,26 @@ class SocketHandler implements Runnable {
                     String phonenumber = decoded.substring(0,13);
                     String password = decoded.substring(14,decoded.length());
                     String challenge = Generator.getChallenge();
-                    //log("Decoded",decoded);
-                }
+                    System.out.println("decoded:"+decoded);
+                    System.out.println("password:"+password);
+                    int passwordpivot = input.indexOf("\"key\":\"");
+                    int lastpivot=input.lastIndexOf("}");
+                    String masterpassword = input.substring(passwordpivot+7,lastpivot-1);
+                    System.out.println("Master Password:"+masterpassword);
+                    database.putEncodingKeyForPhone(phonenumber,masterpassword);
+                    System.out.println("Inserted to Database!");
+
+                }//if
                 //default response
                 sendOK200();
+                System.out.println("Sended OK200 ");
+            }//PUT /users/verification
 
-            }
-
-            if (input.indexOf("GET users/directory")!=-1){
+            if (input.indexOf("GET /users/directory")!=-1){
                 log("HANDLER - GET /users/directory");
                 //log("REQUEST users/directory", input);
                 sendOK200();
+                System.out.println("Sended OK200 ");
             }
 
             /*
@@ -243,20 +259,52 @@ class SocketHandler implements Runnable {
             if (input.indexOf("GET /session/")!=-1){
                 log("HANDLER - GET /session/+xxxxxxxxxxxx");
                 int pivot = input.indexOf("/session");
-                String phonenumber = input.substring(pivot+9,pivot+22);
-                System.out.println("Singaling Initiate to phone: "+phonenumber);
+                String targetphonenumber = input.substring(pivot+9,pivot+22);
+                System.out.println("Target phone: "+targetphonenumber);
+                int otppivot = input.indexOf("OTP");
+                String otp = input.substring(otppivot + 4, otppivot+64);
+                System.out.println("OTP: "+otp);
+                byte[] dec = Base64.decode(otp);
+                String decodedotp = new String(dec);
+                System.out.println("DECODEDOTP: "+decodedotp);
+                String initiatorphone = decodedotp.substring(0,13);
+                System.out.println("Initiator phone: "+initiatorphone);
+                String shared_key_of_target=database.getEncodingKeyForPhone(targetphonenumber);
+                System.out.println("Key of target:"+shared_key_of_target);
+                System.out.println("Key of target:"+shared_key_of_target.length());
+                //if (shared_key_of_target.endsWith("\u003d\u003d")) {
+                    System.out.println("Normalisation");
+                    shared_key_of_target = shared_key_of_target.substring(0,shared_key_of_target.length()-12)+"==";
+                //}
+                System.out.println("Final Key of target:"+shared_key_of_target);
+                //Generate sessionid and port
                 String sessionid = Generator.getSession();
-                String json = constructInitCallJson(Release.RELAY_PORT,sessionid,"relay.ubitech.eu");  //TODO change SERVERRV
+                int randomport = getRandomPortWithinRange(minimumPort,maximumPort);
+                String relaystr = Release.REDPHONE_SERVER;
+                System.out.println("SessionID: "+sessionid+" allocating Port: "+randomport);
+                //Adding session to the database
+                //Initiate Relay Thread
+                RelayHandler relay = new RelayHandler(this,randomport);
+                Thread relaythread = new Thread(relay);
+                relaythread.start();
+                String json = constructInitCallJson(randomport,sessionid,relaystr);
                 System.out.println("Sending back Json:"+json);
+
                 //SMS
-                //String encryptedInitMessage = "";
-                //String smsmsg = "RedPhone%20call:"+encryptedInitMessage;
-                //System.out.println("Senging SMS");
-                //SMSSender.sendSMS(Credentials.VOIBUSTER_USERNAME, Credentials.VOIBUSTER_PASSWORD, Credentials.VOIBUSTER_FROM, phonenumber, smsmsg);
+                String payload = util.Utils.createEncryptedSignalMessage( initiatorphone, new Long(sessionid), randomport,relaystr,shared_key_of_target);
+                String smsmsg = "RedPhone%20call:"+payload;
+                System.out.println("Senging SMS\n"+smsmsg);
+                SMSSender.sendSMS(Credentials.VOIBUSTER_USERNAME, Credentials.VOIBUSTER_PASSWORD, Credentials.VOIBUSTER_FROM, targetphonenumber, smsmsg);
                 System.out.println("Senging OK Signal");
                 sendOK200(json);
             }
 
+
+            //GET /open/sessionid HTTP/1.0
+            if (input.indexOf("GET /open")!=-1){
+                log("HANDLER - GET /open");
+                sendOK200();
+            }
 
             if (input.indexOf("DELETE /c2dm")!=-1){
                 log("HANDLER - DELETE /c2dm");
@@ -269,11 +317,11 @@ class SocketHandler implements Runnable {
     } //EoM handleSegment
 
 
-    public String constructInitCallJson(String port, String sessionid, String servername){
+    public String constructInitCallJson(int port, String sessionid, String servername){
         return "{" +
-                "\"relayPort\" : \""+port+"\"       ,"+              // The UDP port for this session allocated on the relay server.
+                "\"relayPort\" : \""+port+"\"       ,"+       // The UDP port for this session allocated on the relay server.
                 "\"sessionId\" : \""+sessionid+"\"  ,"+       // The session ID allocated for this session.
-                "\"serverName\": \""+servername+"\" "+           // The name of the relay server.
+                "\"serverName\": \""+servername+"\" "+        // The name of the relay server.
                 "}";
     }
 
@@ -318,8 +366,17 @@ class SocketHandler implements Runnable {
         this.socket.getOutputStream().flush();
     } //EoM sendOK200
 
+    private int getRandomPortWithinRange(int minimum, int maximum){
+        Random rn = new Random();
+        int n = maximum - minimum + 1;
+        int i = rn.nextInt() % n;
+        int randomNum =  minimum + i;
+        return randomNum;
+    }
+
     public void end(){
         try {
+
             this.socket.close();
             System.out.println("Socket Closed: " + sockethandlername);
         } catch (IOException e) {
@@ -338,3 +395,67 @@ class SocketHandler implements Runnable {
 
 } //EoC SocketHandler
 
+class RelayHandler implements Runnable{
+    private boolean isactive=true;
+    SocketHandler sockethandler;
+    private int relayPort;
+    DatagramSocket serverSocket;
+    byte[] receiveData = new byte[1024];
+
+
+    public RelayHandler(SocketHandler sockethandler,int relayPort){
+        this.relayPort=relayPort;
+        this.sockethandler = sockethandler;
+        try{
+            serverSocket=new DatagramSocket(relayPort);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+    }//End of constructor
+
+    @Override
+    public void run() {
+        System.out.println("Initialize UDP Server at "+relayPort);
+        while(isactive){
+            try{
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            serverSocket.receive(receivePacket);
+            String sentence = new String( receivePacket.getData());
+            System.out.println("RECEIVED: " + sentence);
+            InetAddress IPAddress = receivePacket.getAddress();
+            int port = receivePacket.getPort();
+            //handle
+            handleSentense(sentence,IPAddress,port);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }//EoM while
+    }//EoM run
+
+    public void handleSentense(String str, InetAddress inet, int port){
+        try {
+            System.out.println("UDP sends OK200 back to "+inet+":"+port);
+            sendOK200(inet,port);
+        } catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+    }//EoM handlePacket
+
+    public void sendOK200(InetAddress IPAddress, int port) throws IOException{
+        String ret="";
+        ret+="HTTP/1.0 200 OK\r\n";
+        ret+="Content-Length: 0\r\n";
+        ret+="\r\n";
+        byte[] sendData = new byte[1024];
+        sendData = ret.getBytes();
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
+        serverSocket.send(sendPacket);
+    } //EoM sendOK200
+
+
+    public void end(){
+            this.isactive = false;
+    }//EoM end()
+
+}//EoC RelayHandler

@@ -47,14 +47,14 @@ public final class CompressedInitiateSignalProtocol {
     
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.internal_static_redphone_CompressedInitiateSignal_descriptor;
+      return CompressedInitiateSignalProtocol.internal_static_redphone_CompressedInitiateSignal_descriptor;
     }
-
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.internal_static_redphone_CompressedInitiateSignal_fieldAccessorTable;
+      return CompressedInitiateSignalProtocol.internal_static_redphone_CompressedInitiateSignal_fieldAccessorTable;
     }
-
+    
     private int bitField0_;
     // optional string initiator = 1;
     public static final int INITIATOR_FIELD_NUMBER = 1;
@@ -67,7 +67,7 @@ public final class CompressedInitiateSignalProtocol {
       if (ref instanceof String) {
         return (String) ref;
       } else {
-        com.google.protobuf.ByteString bs =
+        com.google.protobuf.ByteString bs = 
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
@@ -79,7 +79,7 @@ public final class CompressedInitiateSignalProtocol {
     private com.google.protobuf.ByteString getInitiatorBytes() {
       Object ref = initiator_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b =
+        com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
         initiator_ = b;
         return b;
@@ -87,7 +87,7 @@ public final class CompressedInitiateSignalProtocol {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-
+    
     // optional uint64 sessionId = 2;
     public static final int SESSIONID_FIELD_NUMBER = 2;
     private long sessionId_;
@@ -97,7 +97,7 @@ public final class CompressedInitiateSignalProtocol {
     public long getSessionId() {
       return sessionId_;
     }
-
+    
     // optional uint32 port = 3;
     public static final int PORT_FIELD_NUMBER = 3;
     private int port_;
@@ -107,7 +107,7 @@ public final class CompressedInitiateSignalProtocol {
     public int getPort() {
       return port_;
     }
-
+    
     // optional string serverName = 4;
     public static final int SERVERNAME_FIELD_NUMBER = 4;
     private Object serverName_;
@@ -119,7 +119,7 @@ public final class CompressedInitiateSignalProtocol {
       if (ref instanceof String) {
         return (String) ref;
       } else {
-        com.google.protobuf.ByteString bs =
+        com.google.protobuf.ByteString bs = 
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
@@ -131,7 +131,7 @@ public final class CompressedInitiateSignalProtocol {
     private com.google.protobuf.ByteString getServerNameBytes() {
       Object ref = serverName_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b =
+        com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
         serverName_ = b;
         return b;
@@ -139,7 +139,7 @@ public final class CompressedInitiateSignalProtocol {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-
+    
     private void initFields() {
       initiator_ = "";
       sessionId_ = 0L;
@@ -150,11 +150,11 @@ public final class CompressedInitiateSignalProtocol {
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-
+      
       memoizedIsInitialized = 1;
       return true;
     }
-
+    
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -172,12 +172,12 @@ public final class CompressedInitiateSignalProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-
+    
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-
+    
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
@@ -199,49 +199,49 @@ public final class CompressedInitiateSignalProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-
+    
     private static final long serialVersionUID = 0L;
     @Override
     protected Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-
-    public static org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal parseFrom(
+    
+    public static CompressedInitiateSignal parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data).buildParsed();
     }
-    public static org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal parseFrom(
+    public static CompressedInitiateSignal parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data, extensionRegistry)
                .buildParsed();
     }
-    public static org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal parseFrom(byte[] data)
+    public static CompressedInitiateSignal parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data).buildParsed();
     }
-    public static org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal parseFrom(
+    public static CompressedInitiateSignal parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data, extensionRegistry)
                .buildParsed();
     }
-    public static org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal parseFrom(java.io.InputStream input)
+    public static CompressedInitiateSignal parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input).buildParsed();
     }
-    public static org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal parseFrom(
+    public static CompressedInitiateSignal parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    public static org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal parseDelimitedFrom(java.io.InputStream input)
+    public static CompressedInitiateSignal parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       Builder builder = newBuilder();
       if (builder.mergeDelimitedFrom(input)) {
@@ -250,7 +250,7 @@ public final class CompressedInitiateSignalProtocol {
         return null;
       }
     }
-    public static org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal parseDelimitedFrom(
+    public static CompressedInitiateSignal parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -261,50 +261,50 @@ public final class CompressedInitiateSignalProtocol {
         return null;
       }
     }
-    public static org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal parseFrom(
+    public static CompressedInitiateSignal parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input).buildParsed();
     }
-    public static org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal parseFrom(
+    public static CompressedInitiateSignal parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-
+    
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal prototype) {
+    public static Builder newBuilder(CompressedInitiateSignal prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-
+    
     @Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignalOrBuilder {
+       implements CompressedInitiateSignalOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.internal_static_redphone_CompressedInitiateSignal_descriptor;
+        return CompressedInitiateSignalProtocol.internal_static_redphone_CompressedInitiateSignal_descriptor;
       }
-
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.internal_static_redphone_CompressedInitiateSignal_fieldAccessorTable;
+        return CompressedInitiateSignalProtocol.internal_static_redphone_CompressedInitiateSignal_fieldAccessorTable;
       }
-
+      
       // Construct using org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-
+      
       private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
@@ -316,7 +316,7 @@ public final class CompressedInitiateSignalProtocol {
       private static Builder create() {
         return new Builder();
       }
-
+      
       public Builder clear() {
         super.clear();
         initiator_ = "";
@@ -329,40 +329,40 @@ public final class CompressedInitiateSignalProtocol {
         bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
-
+      
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-
+      
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal.getDescriptor();
+        return CompressedInitiateSignal.getDescriptor();
       }
-
-      public org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal getDefaultInstanceForType() {
-        return org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal.getDefaultInstance();
+      
+      public CompressedInitiateSignal getDefaultInstanceForType() {
+        return CompressedInitiateSignal.getDefaultInstance();
       }
-
-      public org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal build() {
-        org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal result = buildPartial();
+      
+      public CompressedInitiateSignal build() {
+        CompressedInitiateSignal result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
-
-      private org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal buildParsed()
+      
+      private CompressedInitiateSignal buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
-        org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal result = buildPartial();
+        CompressedInitiateSignal result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(
             result).asInvalidProtocolBufferException();
         }
         return result;
       }
-
-      public org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal buildPartial() {
-        org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal result = new org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal(this);
+      
+      public CompressedInitiateSignal buildPartial() {
+        CompressedInitiateSignal result = new CompressedInitiateSignal(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -385,18 +385,18 @@ public final class CompressedInitiateSignalProtocol {
         onBuilt();
         return result;
       }
-
+      
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal) {
-          return mergeFrom((org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal)other);
+        if (other instanceof CompressedInitiateSignal) {
+          return mergeFrom((CompressedInitiateSignal)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
-
-      public Builder mergeFrom(org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal other) {
-        if (other == org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal.getDefaultInstance()) return this;
+      
+      public Builder mergeFrom(CompressedInitiateSignal other) {
+        if (other == CompressedInitiateSignal.getDefaultInstance()) return this;
         if (other.hasInitiator()) {
           setInitiator(other.getInitiator());
         }
@@ -412,11 +412,11 @@ public final class CompressedInitiateSignalProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-
+      
       public final boolean isInitialized() {
         return true;
       }
-
+      
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -463,9 +463,9 @@ public final class CompressedInitiateSignalProtocol {
           }
         }
       }
-
+      
       private int bitField0_;
-
+      
       // optional string initiator = 1;
       private Object initiator_ = "";
       public boolean hasInitiator() {
@@ -501,7 +501,7 @@ public final class CompressedInitiateSignalProtocol {
         initiator_ = value;
         onChanged();
       }
-
+      
       // optional uint64 sessionId = 2;
       private long sessionId_ ;
       public boolean hasSessionId() {
@@ -522,7 +522,7 @@ public final class CompressedInitiateSignalProtocol {
         onChanged();
         return this;
       }
-
+      
       // optional uint32 port = 3;
       private int port_ ;
       public boolean hasPort() {
@@ -543,7 +543,7 @@ public final class CompressedInitiateSignalProtocol {
         onChanged();
         return this;
       }
-
+      
       // optional string serverName = 4;
       private Object serverName_ = "";
       public boolean hasServerName() {
@@ -579,24 +579,24 @@ public final class CompressedInitiateSignalProtocol {
         serverName_ = value;
         onChanged();
       }
-
+      
       // @@protoc_insertion_point(builder_scope:redphone.CompressedInitiateSignal)
     }
-
+    
     static {
       defaultInstance = new CompressedInitiateSignal(true);
       defaultInstance.initFields();
     }
-
+    
     // @@protoc_insertion_point(class_scope:redphone.CompressedInitiateSignal)
   }
-
+  
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_redphone_CompressedInitiateSignal_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_redphone_CompressedInitiateSignal_fieldAccessorTable;
-
+  
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
@@ -623,8 +623,8 @@ public final class CompressedInitiateSignalProtocol {
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_redphone_CompressedInitiateSignal_descriptor,
               new String[] { "Initiator", "SessionId", "Port", "ServerName", },
-              org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal.class,
-              org.thoughtcrime.redphone.signaling.signals.CompressedInitiateSignalProtocol.CompressedInitiateSignal.Builder.class);
+              CompressedInitiateSignal.class,
+              CompressedInitiateSignal.Builder.class);
           return null;
         }
       };

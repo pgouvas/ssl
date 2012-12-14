@@ -13,8 +13,8 @@ public class StunTester {
             String data = "Initiate Stun Server";
             byte[] receive = data.getBytes();
 
-            InetAddress host = InetAddress.getByName("relay.ubitech.eu");
-            DatagramPacket packet = new DatagramPacket(receive,receive.length,host,3478);
+            InetAddress host = InetAddress.getByName("94.75.243.141");
+            DatagramPacket packet = new DatagramPacket(receive,receive.length,host,39492);
             socket.send(packet);
             // Print the response
             System.out.println( new String(packet.getData()) ) ;

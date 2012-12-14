@@ -1,4 +1,4 @@
-package client;
+package test;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
