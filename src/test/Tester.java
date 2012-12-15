@@ -14,8 +14,8 @@ public class Tester {
         Tester tester = new Tester();
 
         try {
-            //tester.testDBEntries();
-            tester.testEncrypt();
+            tester.testDBEntries();
+            //tester.testEncrypt();
             //tester.testDecrypt();
         } catch (Exception e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
@@ -60,7 +60,7 @@ public class Tester {
     private void testDBEntries(){
         DBConnector database = new DBConnector();
         database.enumarateKeyEntries();
-    }
+    }//EoM testDBEntries
 
     private void createCompressedSignal(){
         //1 Byte version

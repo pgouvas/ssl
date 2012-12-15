@@ -1,6 +1,7 @@
 package server;
 
 import db.DBConnector;
+import db.SessionDescriptor;
 import push.SMSSender;
 import util.Base64;
 import util.Credentials;
@@ -10,22 +11,14 @@ import util.Release;
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.*;
 import java.security.Security;
 import java.util.Random;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created with IntelliJ IDEA.
- * User: pgouvas
- * Date: 12/4/12
- * Time: 9:58 AM
- * To change this template use File | Settings | File Templates.
- */
+
 public class SSLServer {
 
     private static int port=Release.REDPHONE_SERVER_PORT;
@@ -52,16 +45,16 @@ public class SSLServer {
         ServerSocket ssocket = null;
         try {
                 //1-way SSL
-                System.setProperty("javax.net.ssl.keyStore","/home/pgouvas/jvm/jdk1.6.0_33/jre/lib/security/cacerts");
+                System.setProperty("javax.net.ssl.keyStore","cacerts");
                 System.setProperty("javax.net.ssl.keyStorePassword","changeit");
 
                 //Security Properties
-//                System.setProperty("javax.net.ssl.keyStore", "/home/pgouvas/workspace/redphoneserver/identitystore.jks");
-//                System.setProperty("javax.net.ssl.keyStorePassword", "123456");    //if the storepassword and private key password are different then an exception is thrown
-//                System.setProperty("javax.net.ssl.keyStoreType", "jks");
-//                System.setProperty("javax.net.ssl.trustStore", "/home/pgouvas/workspace/redphoneserver/truststore.jks");
-//                System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-//                System.setProperty("javax.net.ssl.trustStoreType", "jks");
+//              System.setProperty("javax.net.ssl.keyStore", "/home/pgouvas/workspace/redphoneserver/identitystore.jks");
+//              System.setProperty("javax.net.ssl.keyStorePassword", "123456");    //if the storepassword and private key password are different then an exception is thrown
+//              System.setProperty("javax.net.ssl.keyStoreType", "jks");
+//              System.setProperty("javax.net.ssl.trustStore", "/home/pgouvas/workspace/redphoneserver/truststore.jks");
+//              System.setProperty("javax.net.ssl.trustStorePassword", "123456");
+//              System.setProperty("javax.net.ssl.trustStoreType", "jks");
 
                 //socket
                 ServerSocketFactory ssocketFactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
@@ -75,13 +68,13 @@ public class SSLServer {
                 ((SSLServerSocket) ssocket).setEnabledCipherSuites(enabledCipherSuites);
                 if (two_way_ssl) ((SSLServerSocket) ssocket).setNeedClientAuth(true);
 
-            while ((i++ < maxConnections) || (maxConnections == 0)) {
-                server = ssocket.accept();
-                if (persistent)  server.setKeepAlive(true);
-                SocketHandler handler = new SocketHandler(server,database);
-                Thread t = new Thread(handler);
-                t.start();
-            }
+                while ((i++ < maxConnections) || (maxConnections == 0)) {
+                    server = ssocket.accept();
+                    if (persistent)  server.setKeepAlive(true);
+                    SocketHandler handler = new SocketHandler(server,database);
+                    Thread t = new Thread(handler);
+                    t.start();
+                }
         } catch (Exception ioe) {
             System.out.println("IOException on socket listen: " + ioe);
             ioe.printStackTrace();
@@ -105,6 +98,7 @@ class SocketHandler implements Runnable {
     private int minimumPort= Release.MINIMUM_RELAY_PORT;
     private int maximumPort= Release.MAXIMUM_RELAY_PORT;
     private DBConnector database;
+    private ConcurrentHashMap relays;  //HashMap:= (sessionid,Relayhandler)
 
     SocketHandler(Socket socket,DBConnector database) {
         Random rand = new Random();
@@ -114,6 +108,7 @@ class SocketHandler implements Runnable {
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         this.socket=socket;
         this.database=database;
+        this.relays = new ConcurrentHashMap();
         System.out.println("SocketHandler created "+name);
     } //EoConstructor
 
@@ -174,7 +169,6 @@ class SocketHandler implements Runnable {
                 This method accepts a verification request.
                 According to the Redphone flow this request should end-up in a challenge request. (an always a 200 response)
                 TODO since in the enhanced version we have 2-way SSL additional response code should be included
-
                 Example of expected input:
                 GET /users/verification HTTP/1.0
                 Authorization: Basic KzMwNjk0OTE5MzAzMzp0T1JnZFl0bWl1Q2JnQXMrekRXZUJWbVk=
@@ -220,14 +214,14 @@ class SocketHandler implements Runnable {
                     String phonenumber = decoded.substring(0,13);
                     String password = decoded.substring(14,decoded.length());
                     String challenge = Generator.getChallenge();
-                    System.out.println("decoded:"+decoded);
-                    System.out.println("password:"+password);
+                    //System.out.println("decoded:"+decoded);
+                    //System.out.println("password:"+password);
                     int passwordpivot = input.indexOf("\"key\":\"");
                     int lastpivot=input.lastIndexOf("}");
                     String masterpassword = input.substring(passwordpivot+7,lastpivot-1);
-                    System.out.println("Master Password:"+masterpassword);
+                    //System.out.println("Master Password:"+masterpassword);
                     database.putEncodingKeyForPhone(phonenumber,masterpassword);
-                    System.out.println("Inserted to Database!");
+                    System.out.println("Added Symetric Key: "+phonenumber+" to phone: "+phonenumber);
 
                 }//if
                 //default response
@@ -270,29 +264,46 @@ class SocketHandler implements Runnable {
                 System.out.println("DECODEDOTP: "+decodedotp);
                 String initiatorphone = decodedotp.substring(0,13);
                 System.out.println("Initiator phone: "+initiatorphone);
+
+                String initiatorkey=database.getEncodingKeyForPhone(initiatorphone);
+                //check that the request comes from a registered user
+                if (initiatorkey==null){ //The initiator phone is not registered or activated
+                    sendAuthFailed401();
+                    return;
+                }
+
                 String shared_key_of_target=database.getEncodingKeyForPhone(targetphonenumber);
+                //check that the other user exists
+                if (shared_key_of_target==null){ //The target phone is not registered or activated
+                    sendNoSuchUser404();
+                    return;
+                }
+
                 System.out.println("Key of target:"+shared_key_of_target);
-                System.out.println("Key of target:"+shared_key_of_target.length());
-                //if (shared_key_of_target.endsWith("\u003d\u003d")) {
-                    System.out.println("Normalisation");
-                    shared_key_of_target = shared_key_of_target.substring(0,shared_key_of_target.length()-12)+"==";
-                //}
+                System.out.println("Normalisation... making \\u003d -> -");
+                shared_key_of_target = shared_key_of_target.substring(0,shared_key_of_target.length()-12)+"==";
                 System.out.println("Final Key of target:"+shared_key_of_target);
+
                 //Generate sessionid and port
+                String relayserver = Release.REDPHONE_SERVER;
                 String sessionid = Generator.getSession();
-                int randomport = getRandomPortWithinRange(minimumPort,maximumPort);
-                String relaystr = Release.REDPHONE_SERVER;
+                int randomport = util.Utils.getRandomPortWithinRange(minimumPort, maximumPort, database.getPorts());
+
                 System.out.println("SessionID: "+sessionid+" allocating Port: "+randomport);
                 //Adding session to the database
+                database.addPort(randomport);   //used when choosing random
+                database.addSession(new Long(sessionid), new SessionDescriptor(initiatorphone,targetphonenumber,randomport,new Long(sessionid),relayserver));
                 //Initiate Relay Thread
                 RelayHandler relay = new RelayHandler(this,randomport);
                 Thread relaythread = new Thread(relay);
                 relaythread.start();
-                String json = constructInitCallJson(randomport,sessionid,relaystr);
+                //adding relay to volatile map
+                relays.put(sessionid,relay);
+                String json = constructInitCallJson(randomport,sessionid,relayserver);
                 System.out.println("Sending back Json:"+json);
 
                 //SMS
-                String payload = util.Utils.createEncryptedSignalMessage( initiatorphone, new Long(sessionid), randomport,relaystr,shared_key_of_target);
+                String payload = util.Utils.createEncryptedSignalMessage( initiatorphone, new Long(sessionid), randomport,relayserver,shared_key_of_target);
                 System.out.println("payload before URL encoding   : "+payload);
                 System.out.println("payload length before encoding: "+payload.length());
                 //payload=URLEncoder.encode(payload,"ISO-8859-1");
@@ -319,10 +330,34 @@ class SocketHandler implements Runnable {
                 sendOK200();
             }
 
+            if (input.indexOf("DELETE /session")!=-1){
+                log("HANDLER - DELETE /session");
+                int index1 = input.indexOf("/session/");
+                int index2 = input.indexOf("HTTP");
+                String sessionid = input.substring(index1+9,index2-1).trim();
+                System.out.println("Shutting down UDP server for sessionid: "+sessionid);
+                try {
+                    RelayHandler relay = (RelayHandler) relays.get(sessionid);
+                    if (relay!=null) {
+                        System.out.println("Handler found... it will be notified");
+                        relay.end();
+                    }
+                } catch (Exception ex){
+                     ex.printStackTrace();
+                }
+                System.out.println("Cleaning session and port Database");
+                //RelayHandler handler = (RelayHandler) relays.get(sessionid);
+                //handler.end();
+                sendOK200();
+            }
+
+
             if (input.indexOf("DELETE /c2dm")!=-1){
                 log("HANDLER - DELETE /c2dm");
                 sendOK200();
             }
+
+
 
         }catch (Exception ex){
             ex.printStackTrace();
@@ -379,13 +414,7 @@ class SocketHandler implements Runnable {
         this.socket.getOutputStream().flush();
     } //EoM sendOK200
 
-    private int getRandomPortWithinRange(int minimum, int maximum){
-        Random rn = new Random();
-        int n = maximum - minimum + 1;
-        int i = rn.nextInt() % n;
-        int randomNum =  minimum + i;
-        return randomNum;
-    }
+
 
     public void end(){
         try {
@@ -413,7 +442,7 @@ class SocketHandler implements Runnable {
 
 
 
-class RelayHandler implements Runnable{
+class RelayHandler implements Runnable, Serializable {
     private boolean isactive=true;
     SocketHandler sockethandler;
     private int relayPort;
@@ -440,10 +469,10 @@ class RelayHandler implements Runnable{
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 serverSocket.receive(receivePacket);
                 String sentence = new String( receivePacket.getData());
-                System.out.println("RECEIVED: " + sentence);
+                //System.out.println("RECEIVED: " + sentence);
                 InetAddress IPAddress = receivePacket.getAddress();
                 int port = receivePacket.getPort();
-                //handle
+                //Send ACK
                 handleSentense(sentence,IPAddress,port);
 
                 String sender =  receivePacket.getAddress() +"@"+ receivePacket.getPort();
@@ -456,14 +485,22 @@ class RelayHandler implements Runnable{
                 e.printStackTrace();
             }
         }//EoM while
+        System.out.println("Handler at relay port: "+relayPort+" finilized");
     }//EoM run
+
+    public void end(){
+        this.isactive = false;
+        System.out.println("Finilizing UDP Server at "+relayPort);
+    }//EoM end()
 
     public void handleSentense(String str, InetAddress inet, int port){
         try {
-            System.out.println("UDP sends OK200 back to "+inet+":"+port);
-            sendOK200(inet,port);
+            if (str.startsWith("GET /open")){
+                System.out.println("Hole punching 200-OK back to "+inet+":"+port);
+                sendOK200(inet,port);
+            }
         } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace();
         }
     }//EoM handlePacket
 
@@ -478,17 +515,13 @@ class RelayHandler implements Runnable{
         serverSocket.send(sendPacket);
     } //EoM sendOK200
 
-    public void end(){
-            this.isactive = false;
-    }//EoM end()
-
 
     public void  unicastMessage(DatagramPacket request){
         String sender =  request.getAddress() +"@"+ request.getPort();
         DatagramPacket reply = new DatagramPacket(request.getData(),request.getLength(), request.getAddress(), request.getPort());
         int counter =0;
         try {
-            System.out.println("\n[ START MESSAGE TRANSMISSION ]\n");
+            //System.out.println("\n[ START MESSAGE TRANSMISSION ]\n");
             for(int i=0;i<this.remoteAddress.size();i++){
 
                 String receiver = (this.remoteAddress.get(i).toString()+"@"+this.remotePort.get(i).toString());
@@ -496,7 +529,7 @@ class RelayHandler implements Runnable{
                 //Send messages to All clients beyond me
                 if (!(receiver.equalsIgnoreCase(sender))){
                     counter++;
-                    System.out.println("<-- Unicasting message from: "+sender+" to " + receiver);
+                    //System.out.println("<-- Unicasting message from: "+sender+" to " + receiver);
                     reply =  new DatagramPacket(request.getData(),request.getLength(), (InetAddress) remoteAddress.get(i), Integer.parseInt(remotePort.get(i).toString()) );
 
                     serverSocket.send(reply);
@@ -506,7 +539,7 @@ class RelayHandler implements Runnable{
                     //serverSocket.send(reply);
                 }
             }
-            System.out.println("\n[ END MESSAGE TRANSMISSION, TOTAL RECEIVERS :"+ counter+" ]\n");
+            //System.out.println("\n[ END MESSAGE TRANSMISSION, TOTAL RECEIVERS :"+ counter+" ]\n");
 
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.

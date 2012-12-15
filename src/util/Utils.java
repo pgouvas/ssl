@@ -7,10 +7,40 @@ import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
+import java.util.HashSet;
 import java.util.Random;
 
 
 public class Utils {
+
+    public static int getRandomPortWithinRange(int minimum, int maximum){
+        Random rn = new Random();
+        int n = maximum - minimum + 1;
+        int i = rn.nextInt() % n;
+        int randomNum =  minimum + i;
+        return randomNum;
+    }//EoM getRandomPortWithinRange
+
+
+    /*
+     *  It will return a random port between minimum and maximum excluding the  binded ones
+     *  It will return -1 if all ports are binded
+     */
+    public static int getRandomPortWithinRange(int minimum, int maximum,HashSet binded){
+
+        Random rn = new Random();
+        //check that all ports are bounded
+        if ((maximum+1-minimum)==binded.size()) {
+            return -1;
+        }
+        int randomNum=-1;
+        do{
+            int n = maximum - minimum + 1;
+            int i = rn.nextInt() % n;
+            randomNum =  minimum + i;
+        } while (binded.contains(randomNum));
+        return randomNum;
+    }//EoM getRandomPortWithinRange
 
     public static CompressedInitiateSignalProtocol.CompressedInitiateSignal generateCompressedInitiateSignal(String initiator, long sessionid, int port , String hostname) {
          return CompressedInitiateSignalProtocol.CompressedInitiateSignal.newBuilder()
